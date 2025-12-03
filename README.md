@@ -164,6 +164,18 @@ curl -X POST http://localhost:8080/api/orders \
 }
 ```
 
+### Mock Services (External Product A & B)
+
+To simulate the architecture described, the project includes two mock controllers:
+
+#### Mock External Product A (`/api/external-a/send-order`)
+
+This mock is a simple controller that *acts like Product A* by sending an order to the `/api/orders` endpoint.
+
+#### Mock External Product B (`/api/external-b/orders`)
+
+Mock endpoint that receives processed orders sent asynchronously by the Order Service and logs to confirm the integration is working properly.
+
 ## Performance Tests
 
 ### Load Test Results
