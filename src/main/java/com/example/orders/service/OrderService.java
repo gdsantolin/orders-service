@@ -1,7 +1,9 @@
 package com.example.orders.service;
 
+import com.example.orders.client.ExternalProductBClient;
 import com.example.orders.dto.request.ExternalOrderRequestDTO;
 import com.example.orders.dto.response.OrderResponseDTO;
+import com.example.orders.exception.DuplicateOrderException;
 import com.example.orders.mapper.OrderMapper;
 import com.example.orders.model.Order;
 import com.example.orders.model.OrderStatus;
@@ -23,19 +25,32 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
+    private final ExternalProductBClient productBClient;
 
     /**
-     * Process order received from external product A
-     * - Validate duplicates
-     * - Calculate total value
+     * Main method to process orders from External Product A
+     * Coordinates transaction and async sending to Product B
+     */
+    public OrderResponseDTO processOrder(ExternalOrderRequestDTO requestDTO) {
+        OrderResponseDTO response = processAndSaveOrder(requestDTO);
+
+        // Send to Product B after transaction commit
+        productBClient.sendOrderAsync(response);
+
+        return response;
+    }
+
+    /**
+     * Transactional method to process and save order
+     * Separated to ensure transaction commits before async call
      */
     @Transactional
-    public OrderResponseDTO processOrder(ExternalOrderRequestDTO requestDTO) {
+    private OrderResponseDTO processAndSaveOrder(ExternalOrderRequestDTO requestDTO) {
         log.info("Processing order: {}", requestDTO.getOrderId());
 
         if (orderRepository.existsByExternalOrderId(requestDTO.getOrderId())) {
             log.warn("Duplicate order detected: {}", requestDTO.getOrderId());
-            throw new RuntimeException("Order already exists: " + requestDTO.getOrderId());
+            throw new DuplicateOrderException("Order already exists: " + requestDTO.getOrderId());
         }
 
         Order order = orderMapper.toOrder(requestDTO);

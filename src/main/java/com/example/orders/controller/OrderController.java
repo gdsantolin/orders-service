@@ -3,6 +3,7 @@ package com.example.orders.controller;
 import com.example.orders.dto.request.ExternalOrderRequestDTO;
 import com.example.orders.dto.response.ErrorResponseDTO;
 import com.example.orders.dto.response.OrderResponseDTO;
+import com.example.orders.exception.DuplicateOrderException;
 import com.example.orders.model.OrderStatus;
 import com.example.orders.service.OrderService;
 import jakarta.validation.Valid;
@@ -36,17 +37,29 @@ public class OrderController {
             OrderResponseDTO response = orderService.processOrder(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
-        } catch (RuntimeException e) {
-            log.error("Error processing order: {}", request.getOrderId(), e);
+        } catch (DuplicateOrderException e) {
+            log.error("Duplicate order: {}", request.getOrderId());
 
             ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
                     .message(e.getMessage())
-                    .error("Bad Request")
-                    .status(HttpStatus.BAD_REQUEST.value())
+                    .error("Duplicate Order")
+                    .status(HttpStatus.CONFLICT.value())
                     .timestamp(LocalDateTime.now())
                     .build();
 
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+
+        } catch (Exception e) {
+            log.error("Error processing order: {}", request.getOrderId(), e);
+
+            ErrorResponseDTO errorResponse = ErrorResponseDTO.builder()
+                    .message("Internal error processing order")
+                    .error("Internal Server Error")
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                    .timestamp(LocalDateTime.now())
+                    .build();
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
     }
 
