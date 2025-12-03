@@ -13,13 +13,17 @@ Order management service that receives orders from External Product A, calculate
 ## Architecture Overview
 ![Architecture](assets/solution.png)
 
+**Architecture Flow:**
+
+Orders are received via OrderController, processed in OrderService, persisted through OrderRepository (PostgreSQL), and then sent asynchronously to External Product B via ExternalProductBClient. A thread pool handles concurrent sending to Product B.
+
 **Key Components:**
 - **OrderController:** REST API endpoints
 - **OrderService:** Business logic
 - **OrderRepository:** Database access (JPA)
 - **ExternalProductBClient:** Async integration
-- **ThreadPool:** 10-20 threads for Product B
-- **PostgreSQL:** Persistent storage
+- **ThreadPool:** Managed via Hikari settings (5–20 connections) for Product B
+- **PostgreSQL:** Persistent storage, chosen for consistency, speed, reliability
 
 ## How to Run
 
@@ -184,12 +188,12 @@ Mock endpoint that receives processed orders sent asynchronously by the Order Se
 
 - **1000 concurrent requests** (70ms delay):
     - Success rate: >99%
-    - Latency: 6-10ms
+    - Latency per request: 6-10ms
     - All orders received, processed and sent to Product B
 
 - **500 concurrent requests** (0ms delay):
     - Success rate: 100%
-    - Latency: 6-10ms
+    - Latency per request: 6-10ms
     - System remained stable under maximum load
 
 ### Capacity
@@ -223,4 +227,4 @@ Possible fixes:
   - **Settings > Build, Execution, Deployment > Compiler > Annotation Processors**
   - Select **obtain processors from project classpath** in "Annotation profile for orders"
 - Reload Maven Project
-- Restart IDE (Invalidade Caches/Restart)
+- Restart IDE (Invalidate Caches/Restart)
